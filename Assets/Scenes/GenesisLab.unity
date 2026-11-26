@@ -2775,13 +2775,10 @@ MonoBehaviour:
 
     Those
     shared changes give us a starting point for a cure.'
-  missionBrief: 'Ryder, collect ten zombie DNA samples in the first infected zone
-    and bring the sealed canisters back to Genesis.
-
-
-    Before you deploy, make
-    sure you''ve read the research file. The field exit is at the far end of the
-    lab.'
+  missionBrief: "Ryder, take this field watch. I'll send you updates while you're
+    out there.\nCollect ten zombie DNA samples in the first infected zone. Bring the
+    sealed canisters back to Genesis.\nRead the research file before you deploy through
+    the lab's field exit."
 --- !u!4 &1465054805
 Transform:
   m_ObjectHideFlags: 0

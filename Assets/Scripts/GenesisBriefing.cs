@@ -118,7 +118,7 @@ public sealed class GenesisBriefing : MonoBehaviour
         {
             cardSubject = target;
             bool isFile = target == Subject.ResearchFile;
-            cardTitle.text = isFile ? "Research file" : "Dr. Grey";
+            cardTitle.text = isFile ? "Research file" : "Dr. Edward Grey";
             cardBody.text = isFile ? researchNotes : missionBrief;
             briefingCard.SetActive(true);
             reticle.SetActive(false);
