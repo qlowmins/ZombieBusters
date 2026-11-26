@@ -36,7 +36,12 @@ public class Crouch : MonoBehaviour
 
     void LateUpdate()
     {
-        if (Input.GetKey(key))
+        if (WavePause.BlocksGameplayInput)
+        {
+            return;
+        }
+
+        if (Input.GetKey(key) || (key == KeyCode.LeftShift && Input.GetKey(KeyCode.RightShift)))
         {
             // Enforce a low head.
             if (headToLower)

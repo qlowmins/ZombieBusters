@@ -22,7 +22,6 @@ public class moveBulletForward : MonoBehaviour
         GameObject target = bul.gameObject;
 
         if (target.CompareTag("enemy") ||
-            target.CompareTag("vessel") ||
             target.CompareTag("enemyBoss"))
         {
             // Only zombies and bosses can drop coins

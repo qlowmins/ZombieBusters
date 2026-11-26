@@ -1,0 +1,14 @@
+Microsoft Rocketbox (Copyright 2020 Microsoft), MIT License. Medical Male 03 and Medical Female 02 were downloaded as VRM from Shapeweld and converted to FBX.
+https://github.com/microsoft/Microsoft-Rocketbox
+https://shapeweld.com/free-vrm-models/rocketbox
+
+Science Laboratory and Cleanroom, 3DAssets.dev, CC0 1.0. The publisher identifies the source models as made with AI tools. Bench drawer module, freezer, upright microscope, and biosafety cabinet converted to FBX and fitted to Genesis Laboratory.
+https://3dassets.dev/packs/science-laboratory-and-cleanroom
+
+Concrete034 by ambientCG, CC0 1.0. Color and OpenGL normal maps.
+https://ambientcg.com/view?id=Concrete034
+
+Genesis clipboard and research cover created for ZombieBusters.
+Genesis sample analyzer created for ZombieBusters.
+Genesis architectural shell, observation galleries, and field airlock created for ZombieBusters.
+Printed placards, wayfinding symbols, and dimensional institute lettering created for ZombieBusters.

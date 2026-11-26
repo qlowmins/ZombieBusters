@@ -1166,7 +1166,7 @@ MonoBehaviour:
         m_Calls:
         - m_Target: {fileID: 1075909108}
           m_TargetAssemblyTypeName: playScript, Assembly-CSharp
-          m_MethodName: playGame
+          m_MethodName: StartNewCampaign
           m_Mode: 1
           m_Arguments:
             m_ObjectArgument: {fileID: 0}

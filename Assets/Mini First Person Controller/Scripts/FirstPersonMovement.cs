@@ -10,6 +10,7 @@ public class FirstPersonMovement : MonoBehaviour
     public bool IsRunning { get; private set; }
     public float runSpeed = 9;
     public KeyCode runningKey = KeyCode.LeftShift;
+    public float MovementMultiplier { get; set; } = 1f;
 
     Rigidbody rigidbody;
     /// <summary> Functions to override movement speed. Will use the last added override. </summary>
@@ -64,6 +65,7 @@ void Update()
         {
             targetMovingSpeed = speedOverrides[speedOverrides.Count - 1]();
         }
+        targetMovingSpeed *= MovementMultiplier;
 
         // Get targetVelocity from input.
         Vector2 targetVelocity =new Vector2( Input.GetAxis("Horizontal") * targetMovingSpeed, Input.GetAxis("Vertical") * targetMovingSpeed);
