@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public sealed class CureEpilogue : MonoBehaviour
 {
+    private enum Phase { GreyRadio, RyderRadio, Intake, Trial }
+
     [SerializeField] private Camera view;
     [SerializeField] private Transform intakeStart;
     [SerializeField] private Transform intakeEnd;
@@ -20,10 +22,14 @@ public sealed class CureEpilogue : MonoBehaviour
     [SerializeField] private TMP_Text caption;
     [SerializeField] private Button continueButton;
 
+    private const float RadioLineSeconds = 3f;
+    private const float RadioSeconds = 2f * RadioLineSeconds;
     private const float IntakeSeconds = 5.5f;
     private const float TrialMoveSeconds = 7f;
+    private string intakeTitle;
+    private string intakeCaption;
     private float startedAt;
-    private bool trialStarted;
+    private Phase phase;
     private bool leaving;
 
     private void Start()
@@ -31,6 +37,10 @@ public sealed class CureEpilogue : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         startedAt = Time.unscaledTime;
+        intakeTitle = captionTitle.text;
+        intakeCaption = caption.text;
+        captionTitle.text = "Extraction radio";
+        caption.text = "<b>Dr. Grey</b>  Ryder, the rescue team has reached the extraction point.";
         continueButton.gameObject.SetActive(false);
         continueButton.onClick.AddListener(ContinueToWinner);
         trialLighting.SetActive(false);
@@ -40,15 +50,32 @@ public sealed class CureEpilogue : MonoBehaviour
     private void Update()
     {
         float elapsed = Time.unscaledTime - startedAt;
-        if (elapsed < IntakeSeconds)
+        if (elapsed < RadioSeconds)
         {
-            FrameShot(intakeStart, intakeEnd, elapsed / IntakeSeconds);
+            if (phase == Phase.GreyRadio && elapsed >= RadioLineSeconds)
+            {
+                phase = Phase.RyderRadio;
+                caption.text = "<b>Ryder</b>  Copy, Dr. Grey. I have the DNA samples.";
+            }
             return;
         }
 
-        if (!trialStarted)
+        float labElapsed = elapsed - RadioSeconds;
+        if (labElapsed < IntakeSeconds)
         {
-            trialStarted = true;
+            if (phase != Phase.Intake)
+            {
+                phase = Phase.Intake;
+                captionTitle.text = intakeTitle;
+                caption.text = intakeCaption;
+            }
+            FrameShot(intakeStart, intakeEnd, labElapsed / IntakeSeconds);
+            return;
+        }
+
+        if (phase != Phase.Trial)
+        {
+            phase = Phase.Trial;
             trialLighting.SetActive(true);
             monitor.text = "TRIAL ACTIVE";
             captionTitle.text = "The first cure trial";
@@ -56,7 +83,7 @@ public sealed class CureEpilogue : MonoBehaviour
             continueButton.gameObject.SetActive(true);
         }
 
-        float trialElapsed = elapsed - IntakeSeconds;
+        float trialElapsed = labElapsed - IntakeSeconds;
         FrameShot(trialStart, trialEnd, trialElapsed / TrialMoveSeconds);
         greyReach.SampleAnimation(greyRig, Mathf.Min(trialElapsed, greyReach.length));
         assistantReach.SampleAnimation(assistantRig, Mathf.Min(trialElapsed, assistantReach.length));
@@ -76,7 +103,7 @@ public sealed class CureEpilogue : MonoBehaviour
 
     private void ContinueToWinner()
     {
-        if (!trialStarted || leaving)
+        if (phase != Phase.Trial || leaving)
         {
             return;
         }
