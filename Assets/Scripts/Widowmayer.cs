@@ -17,6 +17,8 @@ public sealed class Widowmayer : MonoBehaviour
     [SerializeField] private LineRenderer pounceRing;
     [SerializeField] private LineRenderer webLine;
     [SerializeField] private Transform webOrb;
+    [SerializeField] private Animation visualAnimation;
+    [SerializeField] private Transform webMuzzle;
     [SerializeField, Min(1)] private int maxHealth = 510;
     [SerializeField] private Vector2 arenaMin = new Vector2(-16f, -21f);
     [SerializeField] private Vector2 arenaMax = new Vector2(16f, 23f);
@@ -35,6 +37,7 @@ public sealed class Widowmayer : MonoBehaviour
     private const int WebDamage = 12;
     private const float SlowDuration = 2.5f;
     private const float SlowMultiplier = 0.5f;
+    private const float WebCastRelease = 0.63f;
 
     private readonly RaycastHit[] webHits = new RaycastHit[16];
     private FirstPersonMovement movement;
@@ -46,11 +49,13 @@ public sealed class Widowmayer : MonoBehaviour
     private float slowUntil;
     private Vector3 jumpStart;
     private Vector3 landingPoint;
-    private Vector3 webStart;
+    private Vector3 webTarget;
     private Vector3 webDirection;
     private float webRemaining;
 
     public int Health { get; private set; }
+
+    private Vector3 WebLaunchPoint => webMuzzle != null ? webMuzzle.position : transform.position + Vector3.up * 1.45f;
 
     private void Awake()
     {
@@ -65,6 +70,10 @@ public sealed class Widowmayer : MonoBehaviour
         slowedText.gameObject.SetActive(false);
         attackCue.text = string.Empty;
         nextPhaseAt = Time.time + OrientingSeconds;
+        if (visualAnimation != null)
+        {
+            visualAnimation.Play("Idle");
+        }
     }
 
     private void Update()
@@ -77,6 +86,11 @@ public sealed class Widowmayer : MonoBehaviour
         if (slowUntil > 0f && Time.time >= slowUntil)
         {
             ClearSlow();
+        }
+
+        if (phase == Phase.WindingUp && attack == Attack.Web)
+        {
+            webLine.SetPosition(0, WebLaunchPoint);
         }
 
         // An attack already at impact can still resolve on the lethal shot's frame.
@@ -133,16 +147,17 @@ public sealed class Widowmayer : MonoBehaviour
             DrawPounceRing();
             ShowCue("POUNCE   /   LEAVE THE RING", new Color(1f, 0.52f, 0.2f));
             nextPhaseAt = Time.time + PounceWindup;
+            PlayAttackAnimation("Pounce Windup", PounceWindup);
             return;
         }
 
-        webStart = transform.position + Vector3.up * 1.45f;
-        webDirection = (target - webStart).normalized;
-        webLine.SetPosition(0, webStart);
-        webLine.SetPosition(1, target);
+        webTarget = target;
+        webLine.SetPosition(0, WebLaunchPoint);
+        webLine.SetPosition(1, webTarget);
         webLine.enabled = true;
         ShowCue("WEB   /   MOVE SIDEWAYS", new Color(0.43f, 1f, 0.92f));
         nextPhaseAt = Time.time + WebWindup;
+        PlayAttackAnimation("Web Cast", WebWindup / WebCastRelease);
     }
 
     private void ReleaseAttack()
@@ -153,11 +168,13 @@ public sealed class Widowmayer : MonoBehaviour
             body.enabled = false;
             phase = Phase.Pouncing;
             nextPhaseAt = Time.time + PounceDuration;
+            PlayAttackAnimation("Pounce", PounceDuration);
             return;
         }
 
         webLine.enabled = false;
-        webOrb.position = webStart;
+        webOrb.position = WebLaunchPoint;
+        webDirection = (webTarget - webOrb.position).normalized;
         webOrb.gameObject.SetActive(true);
         webRemaining = WebRange;
         Recover(WebRecovery);
@@ -240,6 +257,19 @@ public sealed class Widowmayer : MonoBehaviour
         attack = attack == Attack.Pounce ? Attack.Web : Attack.Pounce;
         nextPhaseAt = Time.time + seconds;
         ShowCue("WIDOWMAYER RECOVERING", new Color(0.85f, 0.89f, 0.81f));
+    }
+
+    private void PlayAttackAnimation(string clip, float duration)
+    {
+        if (visualAnimation == null)
+        {
+            return;
+        }
+
+        AnimationState state = visualAnimation[clip];
+        state.speed = state.length / duration;
+        visualAnimation.CrossFade(clip, 0.08f, PlayMode.StopAll);
+        visualAnimation.CrossFadeQueued("Idle", 0.12f);
     }
 
     private void RefreshHealth()
