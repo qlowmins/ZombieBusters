@@ -87,7 +87,13 @@ public sealed class WaveOneZombie : MonoBehaviour
             return;
         }
 
-        if (CanStrike(toPlayer))
+        bool canStrike = CanStrike(toPlayer);
+        if (target.NeedsGoliathWarning && CompareTag("enemyBoss") && (canStrike || HasSightOfPlayer()))
+        {
+            target.NotifyGoliathEncounter();
+        }
+
+        if (canStrike)
         {
             agent.isStopped = true;
             FacePlayer(toPlayer);
@@ -117,6 +123,11 @@ public sealed class WaveOneZombie : MonoBehaviour
             return;
         }
 
+        if (target.NeedsGoliathWarning && CompareTag("enemyBoss"))
+        {
+            target.NotifyGoliathEncounter();
+        }
+
         Health = Mathf.Max(0, Health - damage);
         if (Health == 0)
         {
@@ -130,9 +141,13 @@ public sealed class WaveOneZombie : MonoBehaviour
 
     private bool CanStrike(Vector3 toPlayer)
     {
-        return toPlayer.sqrMagnitude <= attackRange * attackRange &&
-            Physics.Linecast(body.bounds.center, targetBody.bounds.center, out RaycastHit hit,
-                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) && hit.collider == targetBody;
+        return toPlayer.sqrMagnitude <= attackRange * attackRange && HasSightOfPlayer();
+    }
+
+    private bool HasSightOfPlayer()
+    {
+        return Physics.Linecast(body.bounds.center, targetBody.bounds.center, out RaycastHit hit,
+            Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) && hit.collider == targetBody;
     }
 
     private void FacePlayer(Vector3 toPlayer)

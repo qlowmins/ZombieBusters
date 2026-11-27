@@ -1,6 +1,8 @@
+using System;
 using TMPro;
 using UnityEngine;
 
+[DefaultExecutionOrder(-10)]
 [RequireComponent(typeof(WaveProgression))]
 public sealed class WaveOneLoadout : MonoBehaviour
 {
@@ -10,12 +12,28 @@ public sealed class WaveOneLoadout : MonoBehaviour
 
     private WaveProgression player;
     private AudioSource pickupAudio;
-    private WeaponSpec weapon;
+    private sealed class WeaponAmmo
+    {
+        public int Magazine;
+        public int Reserve;
 
+        public WeaponAmmo(WeaponId weapon)
+        {
+            WeaponSpec spec = WeaponCatalog.Get(weapon);
+            Magazine = spec.MagazineSize;
+            Reserve = spec.StartingReserve;
+        }
+    }
+
+    private WeaponAmmo starterAmmo;
+    private WeaponAmmo heavyAmmo;
+    private WeaponAmmo ActiveAmmo => EquippedWeapon == WeaponId.StarterPistol ? starterAmmo : heavyAmmo;
+
+    public event Action<WeaponId> WeaponSwitched;
     public WeaponId EquippedWeapon { get; private set; }
-    public int ShotDamage => weapon.Damage;
-    public int Magazine { get; private set; }
-    public int Reserve { get; private set; }
+    public int ShotDamage => WeaponProfile.Damage(EquippedWeapon);
+    public int Magazine => ActiveAmmo.Magazine;
+    public int Reserve => ActiveAmmo.Reserve;
     public int HealthKits { get; private set; }
 
     private void Awake()
@@ -23,14 +41,24 @@ public sealed class WaveOneLoadout : MonoBehaviour
         player = GetComponent<WaveProgression>();
         pickupAudio = GetComponent<AudioSource>();
         EquippedWeapon = WeaponProfile.Equipped;
-        weapon = WeaponCatalog.Get(EquippedWeapon);
-        Magazine = weapon.MagazineSize;
-        Reserve = weapon.StartingReserve;
+        starterAmmo = new WeaponAmmo(WeaponId.StarterPistol);
+        if (WeaponProfile.Owns(WeaponId.HeavyPistol))
+        {
+            heavyAmmo = new WeaponAmmo(WeaponId.HeavyPistol);
+        }
         RefreshHud();
     }
 
     private void Update()
     {
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            TrySwitchWeapon(WeaponId.StarterPistol);
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            TrySwitchWeapon(WeaponId.HeavyPistol);
+        }
         if (Input.GetKeyDown(KeyCode.R))
         {
             Reload();
@@ -41,6 +69,19 @@ public sealed class WaveOneLoadout : MonoBehaviour
         }
     }
 
+    public bool TrySwitchWeapon(WeaponId weapon)
+    {
+        if (!CanAct || weapon == EquippedWeapon || !WeaponProfile.Owns(weapon))
+        {
+            return false;
+        }
+
+        EquippedWeapon = weapon;
+        RefreshHud();
+        WeaponSwitched?.Invoke(weapon);
+        return true;
+    }
+
     public bool TrySpendRound()
     {
         if (!CanAct || Magazine == 0)
@@ -48,21 +89,22 @@ public sealed class WaveOneLoadout : MonoBehaviour
             return false;
         }
 
-        Magazine--;
+        ActiveAmmo.Magazine--;
         RefreshHud();
         return true;
     }
 
     public bool Reload()
     {
-        if (!CanAct || Magazine == weapon.MagazineSize || Reserve == 0)
+        int capacity = WeaponCatalog.Get(EquippedWeapon).MagazineSize;
+        if (!CanAct || Magazine == capacity || Reserve == 0)
         {
             return false;
         }
 
-        int transferred = Mathf.Min(weapon.MagazineSize - Magazine, Reserve);
-        Magazine += transferred;
-        Reserve -= transferred;
+        int transferred = Mathf.Min(capacity - Magazine, Reserve);
+        ActiveAmmo.Magazine += transferred;
+        ActiveAmmo.Reserve -= transferred;
         RefreshHud();
         return true;
     }
@@ -88,7 +130,7 @@ public sealed class WaveOneLoadout : MonoBehaviour
 
         if (pickup.Kind == SupplyPickup.SupplyKind.Ammo)
         {
-            Reserve += pickup.Amount;
+            ActiveAmmo.Reserve += pickup.Amount;
         }
         else
         {
@@ -104,7 +146,7 @@ public sealed class WaveOneLoadout : MonoBehaviour
     private void RefreshHud()
     {
         string hint = Magazine != 0 ? "" : Reserve > 0 ? "   R TO RELOAD" : "   FIND AMMO";
-        ammoText.text = $"AMMO  {Magazine} / {Reserve}{hint}";
+        ammoText.text = $"{WeaponCatalog.Get(EquippedWeapon).Name.ToUpperInvariant()}\nAMMO  {Magazine} / {Reserve}{hint}";
         kitsText.text = $"HEALTH KITS  {HealthKits}   [E]";
     }
 }

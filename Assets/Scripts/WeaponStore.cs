@@ -19,6 +19,11 @@ public sealed class WeaponStore : MonoBehaviour
     [SerializeField] private Button equipHeavy;
     [SerializeField] private TMP_Text heavyEquipLabel;
 
+    [SerializeField] private Button upgradeStarter;
+    [SerializeField] private TMP_Text starterUpgradeLabel;
+    [SerializeField] private Button upgradeHeavy;
+    [SerializeField] private TMP_Text heavyUpgradeLabel;
+
     private void Awake()
     {
         panel.SetActive(false);
@@ -27,8 +32,9 @@ public sealed class WeaponStore : MonoBehaviour
         buyHeavy.onClick.AddListener(BuyHeavyPistol);
         equipStarter.onClick.AddListener(() => Equip(WeaponId.StarterPistol));
         equipHeavy.onClick.AddListener(() => Equip(WeaponId.HeavyPistol));
-        starterStats.text = Describe(WeaponId.StarterPistol);
-        heavyStats.text = Describe(WeaponId.HeavyPistol);
+        upgradeStarter.onClick.AddListener(() => BuyUpgrade(WeaponId.StarterPistol));
+        upgradeHeavy.onClick.AddListener(() => BuyUpgrade(WeaponId.HeavyPistol));
+        Refresh();
     }
 
     private void Update()
@@ -83,6 +89,24 @@ public sealed class WeaponStore : MonoBehaviour
         }
     }
 
+    private void BuyUpgrade(WeaponId weapon)
+    {
+        WeaponSpec spec = WeaponCatalog.Get(weapon);
+        if (WeaponProfile.TryBuyUpgrade(weapon))
+        {
+            feedback.text = $"{spec.Name} damage upgraded.";
+        }
+        else
+        {
+            int shortfall = spec.UpgradePrice - WeaponProfile.BankedCoins;
+            feedback.text = shortfall > 0
+                ? $"Insufficient funds. You need {shortfall} more {(shortfall == 1 ? "coin" : "coins")}."
+                : "Could not save upgrade. Try again.";
+        }
+
+        Refresh();
+    }
+
     private void Refresh()
     {
         balance.text = $"BANKED COINS   {WeaponProfile.BankedCoins}";
@@ -91,6 +115,10 @@ public sealed class WeaponStore : MonoBehaviour
         buyLabel.text = heavyOwned ? "Owned" : "Buy";
         SetEquipState(WeaponId.StarterPistol, equipStarter, starterEquipLabel);
         SetEquipState(WeaponId.HeavyPistol, equipHeavy, heavyEquipLabel);
+        starterStats.text = Describe(WeaponId.StarterPistol);
+        heavyStats.text = Describe(WeaponId.HeavyPistol);
+        SetUpgradeState(WeaponId.StarterPistol, upgradeStarter, starterUpgradeLabel);
+        SetUpgradeState(WeaponId.HeavyPistol, upgradeHeavy, heavyUpgradeLabel);
     }
 
     private static void SetEquipState(WeaponId weapon, Button button, TMP_Text label)
@@ -101,10 +129,21 @@ public sealed class WeaponStore : MonoBehaviour
         label.text = equipped ? "Equipped" : owned ? "Equip" : "Locked";
     }
 
+    private static void SetUpgradeState(WeaponId weapon, Button button, TMP_Text label)
+    {
+        WeaponSpec spec = WeaponCatalog.Get(weapon);
+        bool owned = WeaponProfile.Owns(weapon);
+        bool upgraded = WeaponProfile.IsUpgraded(weapon);
+        button.interactable = owned && !upgraded;
+        label.text = upgraded ? "Damage Upgraded"
+            : owned ? $"+{spec.UpgradeDamageBonus} Damage  /  {spec.UpgradePrice} Coins"
+            : "Damage Upgrade Locked";
+    }
+
     private static string Describe(WeaponId weapon)
     {
         WeaponSpec spec = WeaponCatalog.Get(weapon);
         string price = spec.Price == 0 ? "Free" : $"{spec.Price} coins";
-        return $"Price<pos=62%>{price}\nDamage<pos=62%>{spec.Damage}\nMagazine<pos=62%>{spec.MagazineSize}\nStarting reserve<pos=62%>{spec.StartingReserve}";
+        return $"Price<pos=62%>{price}\nDamage<pos=62%>{WeaponProfile.Damage(weapon)}\nMagazine<pos=62%>{spec.MagazineSize}\nStarting reserve<pos=62%>{spec.StartingReserve}";
     }
 }

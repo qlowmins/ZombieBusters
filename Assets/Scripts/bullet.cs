@@ -13,14 +13,35 @@ public class bullet : MonoBehaviour
     [SerializeField] private Material heavyPistolMaterial;
 
     private float hideTracerAt;
+    private Mesh starterPistolMesh;
+    private Material starterPistolMaterial;
+    private MeshRenderer gunRenderer;
 
     private void Start()
     {
-        if (loadout != null && loadout.EquippedWeapon == WeaponId.HeavyPistol)
+        if (loadout != null)
         {
-            gunMesh.sharedMesh = heavyPistolMesh;
-            gunMesh.GetComponent<MeshRenderer>().sharedMaterial = heavyPistolMaterial;
+            gunRenderer = gunMesh.GetComponent<MeshRenderer>();
+            starterPistolMesh = gunMesh.sharedMesh;
+            starterPistolMaterial = gunRenderer.sharedMaterial;
+            loadout.WeaponSwitched += ShowWeapon;
+            ShowWeapon(loadout.EquippedWeapon);
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (loadout != null)
+        {
+            loadout.WeaponSwitched -= ShowWeapon;
+        }
+    }
+
+    private void ShowWeapon(WeaponId weapon)
+    {
+        bool heavy = weapon == WeaponId.HeavyPistol;
+        gunMesh.sharedMesh = heavy ? heavyPistolMesh : starterPistolMesh;
+        gunRenderer.sharedMaterial = heavy ? heavyPistolMaterial : starterPistolMaterial;
     }
 
     private void Update()

@@ -21,9 +21,10 @@ public sealed class CureEpilogue : MonoBehaviour
     [SerializeField] private TMP_Text captionTitle;
     [SerializeField] private TMP_Text caption;
     [SerializeField] private Button continueButton;
+    [SerializeField] private FieldWatchMessage fieldWatch;
 
     private const float RadioLineSeconds = 3f;
-    private const float RadioSeconds = 2f * RadioLineSeconds;
+    private const float RadioSeconds = FieldWatchMessage.RescueDisplaySeconds + RadioLineSeconds;
     private const float IntakeSeconds = 5.5f;
     private const float TrialMoveSeconds = 7f;
     private string intakeTitle;
@@ -40,7 +41,9 @@ public sealed class CureEpilogue : MonoBehaviour
         intakeTitle = captionTitle.text;
         intakeCaption = caption.text;
         captionTitle.text = "Extraction radio";
-        caption.text = "<b>Dr. Grey</b>  Ryder, the rescue team has reached the extraction point.";
+        captionTitle.enabled = false;
+        caption.enabled = false;
+        fieldWatch.ShowRescueUpdate();
         continueButton.gameObject.SetActive(false);
         continueButton.onClick.AddListener(ContinueToWinner);
         trialLighting.SetActive(false);
@@ -52,9 +55,11 @@ public sealed class CureEpilogue : MonoBehaviour
         float elapsed = Time.unscaledTime - startedAt;
         if (elapsed < RadioSeconds)
         {
-            if (phase == Phase.GreyRadio && elapsed >= RadioLineSeconds)
+            if (phase == Phase.GreyRadio && elapsed >= FieldWatchMessage.RescueDisplaySeconds)
             {
                 phase = Phase.RyderRadio;
+                captionTitle.enabled = true;
+                caption.enabled = true;
                 caption.text = "<b>Ryder</b>  Copy, Dr. Grey. I have the DNA samples.";
             }
             return;
@@ -66,6 +71,8 @@ public sealed class CureEpilogue : MonoBehaviour
             if (phase != Phase.Intake)
             {
                 phase = Phase.Intake;
+                captionTitle.enabled = true;
+                caption.enabled = true;
                 captionTitle.text = intakeTitle;
                 caption.text = intakeCaption;
             }

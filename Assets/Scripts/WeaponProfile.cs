@@ -10,6 +10,10 @@ public static class WeaponProfile
         public int bankedCoins;
         public bool heavyPistolOwned;
         public WeaponId equipped;
+        public bool starterPistolUpgraded;
+        public bool heavyPistolUpgraded;
+
+        public SaveData Copy() => (SaveData)MemberwiseClone();
     }
 
     private const string SaveFile = "weapon-profile.json";
@@ -32,12 +36,48 @@ public static class WeaponProfile
             return false;
         }
 
-        return TrySave(new SaveData
+        SaveData updated = Profile.Copy();
+        updated.bankedCoins -= price;
+        updated.heavyPistolOwned = true;
+        return TrySave(updated);
+    }
+
+    public static bool IsUpgraded(WeaponId weapon)
+    {
+        return weapon == WeaponId.StarterPistol ? Profile.starterPistolUpgraded
+            : weapon == WeaponId.HeavyPistol && Profile.heavyPistolUpgraded;
+    }
+
+    public static int Damage(WeaponId weapon)
+    {
+        WeaponSpec spec = WeaponCatalog.Get(weapon);
+        return spec.Damage + (IsUpgraded(weapon) ? spec.UpgradeDamageBonus : 0);
+    }
+
+    public static bool TryBuyUpgrade(WeaponId weapon)
+    {
+        if (!Owns(weapon) || IsUpgraded(weapon))
         {
-            bankedCoins = BankedCoins - price,
-            heavyPistolOwned = true,
-            equipped = Equipped
-        });
+            return false;
+        }
+
+        int price = WeaponCatalog.Get(weapon).UpgradePrice;
+        if (BankedCoins < price)
+        {
+            return false;
+        }
+
+        SaveData updated = Profile.Copy();
+        updated.bankedCoins -= price;
+        if (weapon == WeaponId.StarterPistol)
+        {
+            updated.starterPistolUpgraded = true;
+        }
+        else
+        {
+            updated.heavyPistolUpgraded = true;
+        }
+        return TrySave(updated);
     }
 
     public static bool TryEquip(WeaponId weapon)
@@ -52,12 +92,9 @@ public static class WeaponProfile
             return true;
         }
 
-        return TrySave(new SaveData
-        {
-            bankedCoins = BankedCoins,
-            heavyPistolOwned = Profile.heavyPistolOwned,
-            equipped = weapon
-        });
+        SaveData updated = Profile.Copy();
+        updated.equipped = weapon;
+        return TrySave(updated);
     }
 
     public static int? Deposit(int amount)
@@ -68,12 +105,8 @@ public static class WeaponProfile
         }
 
         int deposit = Mathf.Min(amount, int.MaxValue - BankedCoins);
-        var updated = new SaveData
-        {
-            bankedCoins = BankedCoins + deposit,
-            heavyPistolOwned = Profile.heavyPistolOwned,
-            equipped = Equipped
-        };
+        SaveData updated = Profile.Copy();
+        updated.bankedCoins += deposit;
         return TrySave(updated) ? deposit : (int?)null;
     }
 

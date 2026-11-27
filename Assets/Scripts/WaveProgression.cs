@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public sealed class WaveProgression : MonoBehaviour
 {
-    [SerializeField] private TMP_Text vesselText;
+    [SerializeField] private TMP_Text objectiveText;
     [SerializeField, Min(1)] private int requiredSamples;
     [SerializeField] private bool defeatBossToClear;
     [SerializeField] private TMP_Text healthText;
@@ -19,22 +19,25 @@ public sealed class WaveProgression : MonoBehaviour
     [SerializeField] private TMP_Text coinText;
     [SerializeField] private CoinPickup coinPrefab;
     [SerializeField] private WaveDepositNotice depositNotice;
+    [SerializeField] private FieldWatchMessage fieldWatch;
 
     private int samplesCollected;
     private int unbankedCoins;
     private bool bossDefeated;
+    private bool goliathEncountered;
     private bool outcomeResolved;
     private AudioSource pickupAudio;
 
     public int CurrentHealth => health;
     public int MaxHealth { get; private set; }
+    public bool NeedsGoliathWarning => fieldWatch != null && !goliathEncountered && !outcomeResolved && health > 0;
 
     private void Awake()
     {
         pickupAudio = GetComponent<AudioSource>();
         MaxHealth = health;
         UpdateHealthDisplay();
-        UpdateSampleText();
+        UpdateObjectiveText();
         UpdateCoinText();
     }
 
@@ -68,7 +71,11 @@ public sealed class WaveProgression : MonoBehaviour
         pickupAudio.Play();
 
         samplesCollected++;
-        UpdateSampleText();
+        UpdateObjectiveText();
+        if (samplesCollected == 1)
+        {
+            fieldWatch?.ShowFirstSample();
+        }
     }
 
     public void DropCoins(Vector3 position, int amount)
@@ -94,11 +101,20 @@ public sealed class WaveProgression : MonoBehaviour
         }
     }
 
-    private void UpdateSampleText()
+    private void UpdateObjectiveText()
     {
-        if (vesselText != null)
+        if (objectiveText != null)
         {
-            vesselText.text = $"{samplesCollected} / {requiredSamples}";
+            objectiveText.text = defeatBossToClear ? "Defeat Widowmayer" : $"DNA Samples  {samplesCollected} / {requiredSamples}";
+        }
+    }
+
+    public void NotifyGoliathEncounter()
+    {
+        if (NeedsGoliathWarning)
+        {
+            goliathEncountered = true;
+            fieldWatch.ShowGoliathWarning();
         }
     }
 
@@ -152,7 +168,7 @@ public sealed class WaveProgression : MonoBehaviour
 
     private void UpdateHealthDisplay()
     {
-        healthText.text = health.ToString();
+        healthText.text = $"HEALTH  {health} / {MaxHealth}";
         if (healthFill != null)
         {
             healthFill.fillAmount = (float)health / MaxHealth;
